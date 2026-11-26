@@ -1,0 +1,63 @@
+name: Build telemetry probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "telemetry-probe/**"
+      - "tools/compile_capture.py"
+      - ".github/workflows/build-telemetry-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install CMake
+        uses: lukka/get-cmake@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download SCS Telemetry SDK
+        shell: pwsh
+        run: |
+          $sdkArchive = Join-Path $env:RUNNER_TEMP "scs_sdk_1_17.zip"
+          $sdkRoot = Join-Path $env:RUNNER_TEMP "scs_sdk"
+          Invoke-WebRequest -Uri "https://download.eurotrucksimulator2.com/scs_sdk_1_17.zip" -OutFile $sdkArchive
+          Expand-Archive -Path $sdkArchive -DestinationPath $sdkRoot -Force
+          $header = Get-ChildItem -Path $sdkRoot -Filter "scssdk_telemetry.h" -Recurse | Select-Object -First 1
+          if (-not $header) { throw "scssdk_telemetry.h was not found in the SCS SDK archive." }
+          "SCS_SDK_INCLUDE_DIR=$($header.Directory.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Configure and build
+        shell: pwsh
+        run: |
+          cmake -S telemetry-probe -B build/telemetry-probe -A x64 "-DSCS_SDK_INCLUDE_DIR=$env:SCS_SDK_INCLUDE_DIR"
+          cmake --build build/telemetry-probe --config Release
+
+      - name: Assemble package
+        shell: pwsh
+        run: |
+          $packageRoot = Join-Path $env:RUNNER_TEMP "autonomous-trucker-probe"
+          New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
+          Copy-Item "build/telemetry-probe/Release/autonomous_trucker_probe.dll" $packageRoot
+          Copy-Item "telemetry-probe/README.md" $packageRoot
+          Copy-Item "tools/compile_capture.py" $packageRoot
+          Compress-Archive -Path "$packageRoot/*" -DestinationPath "build/ATS-ETS2-Telemetry-Probe-Windows-x64.zip" -Force
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ATS-ETS2-Telemetry-Probe-Windows-x64
+          path: build/ATS-ETS2-Telemetry-Probe-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
