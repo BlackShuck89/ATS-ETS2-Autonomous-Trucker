@@ -83,6 +83,20 @@ def compact(value: Any) -> str:
     return str(value)
 
 
+def cadence(records: list[dict[str, Any]]) -> tuple[float | None, float | None]:
+    timestamps = sorted(
+        timestamp for timestamp in (iso_dt(record.get("utc")) for record in records)
+        if timestamp is not None
+    )
+    if len(timestamps) < 2:
+        return None, None
+    gaps = [(right - left).total_seconds() for left, right in zip(timestamps, timestamps[1:])]
+    duration = (timestamps[-1] - timestamps[0]).total_seconds()
+    rate = (len(timestamps) - 1) / duration if duration > 0 else None
+    median_gap_ms = statistics.median(gaps) * 1000
+    return rate, median_gap_ms
+
+
 def make_outputs(input_path: Path, metadata: dict[str, Any], events: list[dict[str, Any]], malformed: int) -> tuple[Path, Path]:
     stem = input_path.with_suffix("")
     summary_path = stem.with_name(stem.name + "-summary.md")
@@ -124,6 +138,7 @@ def make_outputs(input_path: Path, metadata: dict[str, Any], events: list[dict[s
         f"- Source: {input_path.name}",
         f"- Game: {metadata.get('game_id', 'unknown')} ({metadata.get('game_name', 'name unavailable')})",
         f"- SDK API version: {metadata.get('sdk_api_version', 'unknown')}",
+        f"- Game SDK version: {metadata.get('game_sdk_version', 'not recorded')}",
         f"- Telemetry events: {len(events):,}",
         f"- Malformed or unrecognized lines: {malformed:,}",
         f"- First sample: {first_time.isoformat() if first_time else 'unavailable'}",
@@ -131,12 +146,22 @@ def make_outputs(input_path: Path, metadata: dict[str, Any], events: list[dict[s
         "",
         "## Requested channel coverage",
         "",
-        "| Channel | Status | Events |",
-        "|---|---:|---:|",
+        "| Channel | Status | Events | Approx. updates/sec | Median gap (ms) |",
+        "|---|---:|---:|---:|---:|",
     ]
     for channel in EXPECTED_CHANNELS:
-        count = len(per_channel.get(channel, []))
-        lines.append(f"| {channel} | {'observed' if count else 'not observed'} | {count:,} |")
+        records = per_channel.get(channel, [])
+        rate, median_gap = cadence(records)
+        rate_text = f"{rate:.2f}" if rate is not None else "—"
+        gap_text = f"{median_gap:.1f}" if median_gap is not None else "—"
+        lines.append(
+            f"| {channel} | {'observed' if records else 'not observed'} | "
+            f"{len(records):,} | {rate_text} | {gap_text} |"
+        )
+    lines.extend([
+        "",
+        "Update rates are observed callback rates, not guaranteed SDK sampling rates; unchanged channels may report only when their value changes.",
+    ])
     extra = [name for name in columns if name.split("[", 1)[0] not in EXPECTED_CHANNELS]
     if extra:
         lines.extend(["", "## Additional channels", ""])
