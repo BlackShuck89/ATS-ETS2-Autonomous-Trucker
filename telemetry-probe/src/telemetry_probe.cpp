@@ -224,6 +224,7 @@ extern "C" __declspec(dllexport) SCSAPI_RESULT scs_telemetry_init(
             << "\",\"game_name\":\""
             << json_escape(init->common.game_name ? init->common.game_name : "")
             << "\",\"sdk_api_version\":" << version
+            << ",\"game_sdk_version\":" << init->common.game_version
             << ",\"note\":\"Read-only telemetry capture; no controls are sent.\"}\n";
 
     const auto reg = init->register_for_channel;
