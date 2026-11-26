@@ -2,7 +2,7 @@
 
 ## Intended operating mode
 
-The target is short-break autonomy: while the player steps away, the companion should continue the current delivery along the game's active route for ordinary driving. It must not be limited to operating ACC or Lane Assistant. Route following, road positioning, lane changes, exits, signals, weather response, and control recovery are part of the eventual system.
+The target is short-break autonomy: while the player steps away, the companion should continue the current delivery along the game's active route for ordinary driving. It must not be limited to operating ACC or Lane Assistant. Route following, road positioning, lane changes, exits, signals, lighting, wipers, and control recovery are part of the eventual system.
 
 The player must be able to take over immediately. If the companion loses route confidence or encounters a situation it cannot handle, it should reduce risk and stop or request the player's attention rather than make an uncertain maneuver.
 
@@ -10,14 +10,16 @@ The player must be able to take over immediately. If the companion loses route c
 
 ### 1. Game telemetry adapter
 
-Use the official SCS Telemetry SDK as the initial source for truck and game state. First inspect and record the fields available for the supported ATS and ETS2 versions, including:
+Use the official SCS Telemetry SDK as the initial source for truck and game state. The first capture plugin requests:
 
 - World position and orientation
-- Speed, steering, throttle, and brake state
+- Speed, steering, throttle, and brake input
 - Navigation distance, ETA, and route speed limit
 - In-game time
-- Current lights, turn indicators, and wiper state
-- Rain/weather state, if available through the supported interface
+- Current cruise-control set speed
+- Current lights, turn indicators, hazards, and wiper state
+
+The initial probe does not yet capture weather, screenshots, route geometry, or turn instructions. Its compiler reports channel coverage and creates a per-second CSV for inspection. If weather is not exposed through the supported interface, that will be recorded as a data gap and addressed in a later sensing step.
 
 The adapter should normalize units and version differences into a stable internal snapshot. Missing fields must be represented as unavailable rather than guessed.
 
@@ -50,9 +52,9 @@ Send controls through a supported input device or virtual controller, using the 
 
 Player input should override automation immediately. The interface should include a clear enable/disable state and a visible indication of what the controller is doing.
 
-## First milestone: read-only telemetry probe
+## First milestone: read-only telemetry capture
 
-The first implementation should not control the truck. It should connect to the game, show live values, and save a timestamped log. Drive a short route that includes a straight highway, a lane change, an exit, a junction, nighttime or dusk, and rain if practical.
+Build the plugin against the SCS Telemetry SDK, install it in ATS/ETS2, and drive a short route that includes a highway stretch, a lane change, an exit or junction, and varied lighting/weather if practical. The plugin writes JSON Lines events to the captures folder. The Python standard-library compiler turns that event stream into a Markdown coverage summary and a per-second CSV.
 
 Record:
 
@@ -62,7 +64,7 @@ Record:
 - Whether weather and vehicle-control states are exposed
 - What breaks when the game or map version changes
 
-The deliverable for this milestone is a verified telemetry inventory and a decision on the route-data source. Only then should the project send any driving controls.
+The deliverable is a verified telemetry inventory and a decision on the route-data source. Only then should the project send any driving controls.
 
 ## Initial references
 
