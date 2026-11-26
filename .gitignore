@@ -1,0 +1,8 @@
+build/
+out/
+captures/
+*.jsonl
+*-summary.md
+*-samples.csv
+__pycache__/
+*.py[cod]
