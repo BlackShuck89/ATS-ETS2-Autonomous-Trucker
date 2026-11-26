@@ -36,7 +36,7 @@ Drive a short route that includes a highway stretch, an exit or junction, a lane
 
 ## Compile a capture
 
-With Python 3 installed, run:
+With Python 3.10 or newer installed, run:
 
 ```powershell
 py tools/compile_capture.py "C:/path/to/capture.jsonl"
