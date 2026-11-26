@@ -199,6 +199,8 @@ void register_typed(
 
 } // namespace
 
+// The SDK declares its entry points with C linkage inside SCSSDK_HEADER.
+SCSSDK_HEADER
 __declspec(dllexport) SCSAPI_RESULT scs_telemetry_init(
     const scs_u32_t version,
     const scs_telemetry_init_params_t* const params) {
@@ -257,3 +259,4 @@ __declspec(dllexport) SCSAPI_VOID scs_telemetry_shutdown() {
         capture.close();
     }
 }
+SCSSDK_FOOTER
