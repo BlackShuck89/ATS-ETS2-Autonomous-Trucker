@@ -199,9 +199,7 @@ void register_typed(
 
 } // namespace
 
-// The SDK declares its entry points with C linkage inside SCSSDK_HEADER.
-SCSSDK_HEADER
-__declspec(dllexport) SCSAPI_RESULT scs_telemetry_init(
+SCSAPI_RESULT scs_telemetry_init(
     const scs_u32_t version,
     const scs_telemetry_init_params_t* const params) {
     if (SCS_GET_MAJOR_VERSION(version) != 1) return SCS_RESULT_unsupported;
@@ -252,11 +250,10 @@ __declspec(dllexport) SCSAPI_RESULT scs_telemetry_init(
     return SCS_RESULT_ok;
 }
 
-__declspec(dllexport) SCSAPI_VOID scs_telemetry_shutdown() {
+SCSAPI_VOID scs_telemetry_shutdown(void) {
     std::lock_guard<std::mutex> lock(capture_mutex);
     if (capture.is_open()) {
         capture.flush();
         capture.close();
     }
 }
-SCSSDK_FOOTER
