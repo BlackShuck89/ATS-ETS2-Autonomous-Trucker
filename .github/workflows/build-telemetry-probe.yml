@@ -34,6 +34,9 @@ jobs:
           $header = Get-ChildItem -Path $sdkRoot -Filter "scssdk_telemetry.h" -Recurse | Select-Object -First 1
           if (-not $header) { throw "scssdk_telemetry.h was not found in the SCS SDK archive." }
           "SCS_SDK_INCLUDE_DIR=$($header.Directory.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "SDK linkage declarations:"
+          Select-String -Path (Join-Path $header.Directory.FullName "scssdk.h") -Pattern "SCSSDK_HEADER|SCSAPI_RESULT|SCSAPIFUNC|SCSSDK_FOOTER"
+          Select-String -Path $header.FullName -Pattern "scs_telemetry_init|scs_telemetry_shutdown"
 
       - name: Configure and build
         shell: pwsh
