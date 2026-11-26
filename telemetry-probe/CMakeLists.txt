@@ -21,6 +21,7 @@ target_compile_features(autonomous_trucker_probe PRIVATE cxx_std_17)
 target_compile_definitions(autonomous_trucker_probe PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 set_target_properties(autonomous_trucker_probe PROPERTIES
     OUTPUT_NAME "autonomous_trucker_probe"
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN YES
 )
